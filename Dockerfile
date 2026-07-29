@@ -1,13 +1,25 @@
 FROM ruby:3.4.4-slim AS builder
 
+ARG VERSION
+
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-RUN gem install openclacky --no-document
+RUN if [ -n "$VERSION" ]; then \
+      gem install openclacky -v "$VERSION" --no-document; \
+    else \
+      gem install openclacky --no-document; \
+    fi
 
 FROM ruby:3.4.4-slim
+
+ARG VERSION
+LABEL org.opencontainers.image.title="openclacky" \
+      org.opencontainers.image.description="OpenClacky AI agent CLI and Web UI" \
+      org.opencontainers.image.source="https://github.com/clacky-ai/openclacky" \
+      org.opencontainers.image.version="${VERSION}"
 
 RUN apt-get update && apt-get install -y \
     git \
