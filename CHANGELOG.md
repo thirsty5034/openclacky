@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.5.4] - 2026-07-29
+
+### Added
+- WebUI project folders: open directories as first-class sidebar projects with session grouping
+- ProjectManager API and path canonicalization for project create/list/rename/remove
+- Desktop notification permission UX improvements for the notify component
+- GitHub Actions workflow to publish Docker images to GHCR on version tags
+
+### Improved
+- Session list page size reduced from 20 to 15 for denser sidebar browsing
+- Project folders expose store events via Clacky.ext and follow store/view layering
+
+### Fixed
+- Projects store/view extension architecture checks (empty view module + Clacky.ProjectsStore export)
+- Remove dead code branch for empty readme deletion in ext-studio handler
+
 ## [1.5.3] - 2026-07-28
 
 ### Added

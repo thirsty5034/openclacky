@@ -5,13 +5,14 @@ ARG VERSION
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN if [ -n "$VERSION" ]; then \
-      gem install openclacky -v "$VERSION" --no-document; \
-    else \
-      gem install openclacky --no-document; \
-    fi
+# Build from repository source so fork releases do not depend on RubyGems ownership.
+COPY . /src
+WORKDIR /src
+RUN gem build openclacky.gemspec \
+    && gem install ./openclacky-*.gem --no-document
 
 FROM ruby:3.4.4-slim
 
