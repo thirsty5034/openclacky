@@ -9,10 +9,17 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Build from repository source so fork releases do not depend on RubyGems ownership.
+# gemspec uses `git ls-files`; seed a temporary git index because .git is dockerignored.
 COPY . /src
 WORKDIR /src
-RUN gem build openclacky.gemspec \
-    && gem install ./openclacky-*.gem --no-document
+RUN git init \
+    && git config user.email "docker@local" \
+    && git config user.name "docker" \
+    && git add -A \
+    && git commit -m "docker build" \
+    && gem build openclacky.gemspec \
+    && gem install ./openclacky-*.gem --no-document \
+    && ruby -e 'require "clacky"; abort "bad version" unless Clacky::VERSION'
 
 FROM ruby:3.4.4-slim
 
