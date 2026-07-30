@@ -33,6 +33,21 @@ RSpec.describe Clacky::ProjectManager do
     expect(manager.list.size).to eq(1)
   end
 
+  it "lists projects most-recently-opened first" do
+    older_dir = File.join(tmpdir, "older")
+    newer_dir = File.join(tmpdir, "newer")
+    FileUtils.mkdir_p([older_dir, newer_dir])
+
+    older = manager.open(older_dir)
+    sleep 0.02
+    newer = manager.open(newer_dir)
+    expect(manager.list.map { |p| p[:id] }).to eq([newer[:id], older[:id]])
+
+    sleep 0.02
+    manager.touch(older[:id])
+    expect(manager.list.map { |p| p[:id] }).to eq([older[:id], newer[:id]])
+  end
+
   it "finds projects by normalized path" do
     project = manager.open(project_dir)
     found = manager.find_by_path(project_dir + "/")
