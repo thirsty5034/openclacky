@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
+## [1.5.5] - 2026-07-30
+
+### Improved
+- Raise project folders by latest session activity so recently used projects stay near the top
+- Skip redundant project touch requests when reselecting the already active project
+
+### Fixed
+- Make project most-recently-opened timestamps millisecond-precise so MRU ordering stays stable under fast successive opens
+
 ## [1.5.4] - 2026-07-29
 
 ### Added
