@@ -38,12 +38,13 @@ RSpec.describe Clacky::ProjectManager do
     newer_dir = File.join(tmpdir, "newer")
     FileUtils.mkdir_p([older_dir, newer_dir])
 
+    t0 = Time.utc(2026, 1, 1, 12, 0, 0)
+    allow(Time).to receive(:now).and_return(t0, t0 + 5, t0 + 10)
+
     older = manager.open(older_dir)
-    sleep 0.02
     newer = manager.open(newer_dir)
     expect(manager.list.map { |p| p[:id] }).to eq([newer[:id], older[:id]])
 
-    sleep 0.02
     manager.touch(older[:id])
     expect(manager.list.map { |p| p[:id] }).to eq([older[:id], newer[:id]])
   end

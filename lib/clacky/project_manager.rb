@@ -48,7 +48,7 @@ module Clacky
       @mutex.synchronize do
         projects = load_projects
         existing = projects.find { |p| p[:path] == normalized }
-        now = Time.now.utc.iso8601
+        now = timestamp_now
 
         if existing
           existing[:last_opened_at] = now
@@ -76,7 +76,7 @@ module Clacky
         project = projects.find { |p| p[:id] == id.to_s }
         return nil unless project
 
-        project[:last_opened_at] = Time.now.utc.iso8601
+        project[:last_opened_at] = timestamp_now
         save_projects!(projects)
         project.dup
       end
@@ -92,7 +92,7 @@ module Clacky
         return nil unless project
 
         project[:name] = clean
-        project[:last_opened_at] = Time.now.utc.iso8601
+        project[:last_opened_at] = timestamp_now
         save_projects!(projects)
         project.dup
       end
@@ -122,6 +122,11 @@ module Clacky
       absolute
     rescue StandardError
       nil
+    end
+
+    # Millisecond ISO-8601 so rapid open/touch keeps stable MRU order.
+    private def timestamp_now
+      Time.now.utc.iso8601(3)
     end
 
     private def ensure_file!
