@@ -125,7 +125,39 @@ module Clacky
     #   *    /api/*                  → JSON REST API (sessions, tasks, schedules)
     #   GET  /**                     → static files served from lib/clacky/web/ directory
     class HttpServer
-      WEB_ROOT = File.expand_path("../web", __dir__)
+      # Built-in WebUI directory shipped inside the gem. Always available as
+      # the fallback layer when a custom WebUI (CLACKY_WEB_ROOT) is missing a
+      # file, so the custom UI only needs to contain the files it overrides.
+      BUILTIN_WEB_ROOT = File.expand_path("../web", __dir__)
+
+      # Effective WebUI root. CLACKY_WEB_ROOT points at an external custom UI
+      # directory; files missing there fall back to BUILTIN_WEB_ROOT. This is
+      # the single integration point that lets a forked/custom WebUI live
+      # outside the gem while the core repo stays aligned with upstream.
+      WEB_ROOT = begin
+        custom = ENV["CLACKY_WEB_ROOT"].to_s.strip
+        custom.empty? ? BUILTIN_WEB_ROOT : File.expand_path(custom)
+      end
+
+      # WEBrick FileHandler that serves from the custom WebUI root first and
+      # falls back to the built-in web directory when the requested file does
+      # not exist in the custom layer. Used only when CLACKY_WEB_ROOT is set.
+      class LayeredFileHandler < WEBrick::HTTPServlet::FileHandler
+        def initialize(server, external_root, builtin_root)
+          @external_root = File.expand_path(external_root)
+          @builtin_root  = File.expand_path(builtin_root)
+          super(server, @external_root, FancyIndexing: false)
+        end
+
+        def service(req, res)
+          super
+        rescue WEBrick::HTTPStatus::NotFound
+          @root = @builtin_root
+          super
+        ensure
+          @root = @external_root
+        end
+      end
       EXCHANGE_RATE_PRIMARY_BASE_URL = "https://open.er-api.com/v6/latest"
       EXCHANGE_RATE_FALLBACK_URL = "https://api.frankfurter.app/latest"
       OSS_CDN_BASE = "https://oss.1024code.com/openclacky"
@@ -364,9 +396,18 @@ module Clacky
         # Special case: GET / and GET /index.html are served with server-side
         # rendering — the {{BRAND_NAME}} placeholder is replaced before delivery
         # so the correct brand name appears on first paint with no JS flash.
-        file_handler = WEBrick::HTTPServlet::FileHandler.new(server, WEB_ROOT,
-                                                             FancyIndexing: false)
+        #
+        # When CLACKY_WEB_ROOT is configured, the handler layers the custom
+        # root over the built-in directory (custom file wins, missing files
+        # fall back to the built-in UI). index.html follows the same rule.
+        file_handler = if WEB_ROOT == BUILTIN_WEB_ROOT
+                         WEBrick::HTTPServlet::FileHandler.new(server, WEB_ROOT,
+                                                               FancyIndexing: false)
+                       else
+                         LayeredFileHandler.new(server, WEB_ROOT, BUILTIN_WEB_ROOT)
+                       end
         index_html_path = File.join(WEB_ROOT, "index.html")
+        index_html_path = File.join(BUILTIN_WEB_ROOT, "index.html") unless File.file?(index_html_path)
 
         server.mount_proc("/") do |req, res|
           if req.path == "/" || req.path == "/index.html"
